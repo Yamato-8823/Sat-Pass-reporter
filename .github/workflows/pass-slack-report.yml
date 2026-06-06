@@ -1,5 +1,8 @@
 name: PASS Slack Report 18 JST
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   schedule:
     # GitHub Actions cron is UTC. 09:00 UTC = 18:00 JST.
@@ -32,12 +35,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 24
 
       - name: Install dependencies
         run: npm ci
@@ -91,4 +94,5 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add public/tle reports
           git commit -m "Update TLE or PASS report marker"
-          git push
+          git pull --rebase origin main
+          git push origin HEAD:main
