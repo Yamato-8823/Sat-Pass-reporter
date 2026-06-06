@@ -71,10 +71,12 @@ function passLine(row, timeZone, reportDateYmd) {
 
 
 function displayTleText(sat) {
-  const lines = displayTleText(sat).split(/\r?\n/);
+  const lines = tleTextFromSat(sat).trim().replace(/\r\n/g, "\n").split("\n");
+
   if (lines.length >= 3) {
     lines[0] = "Mono-Nikko(H)";
   }
+
   return lines.join("\n");
 }
 
@@ -85,6 +87,7 @@ function buildReportText({ sat, station, dayStartUtc, reportDateYmd, timeZone, t
     "```",
     displayTleText(sat),
     "```",
+    "",
     "Pass[日付No] [AOS時刻]to[LOS時刻]@MEL=[MEL][deg.] [運用/非運用] の形式で書いております",
     "",
     formatMdInZone(dayStartUtc, timeZone),
