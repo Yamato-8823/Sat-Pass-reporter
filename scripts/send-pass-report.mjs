@@ -61,8 +61,7 @@ function localMinutes(date, timeZone) {
 }
 
 function passIdForDate(reportDateYmd, index) {
-  const [, month, day] = String(reportDateYmd).split("-");
-  return `${month}${day}-${passNo(index)}`;
+  return passNo(index);
 }
 
 function passLine(row, timeZone, reportDateYmd) {
@@ -78,8 +77,11 @@ function buildReportText({ sat, station, dayStartUtc, reportDateYmd, timeZone, t
     tleTextFromSat(sat),
     "```",
     "",
-    formatMdInZone(dayStartUtc, timeZone),
     "Pass[No] [AOS時刻]to[LOS時刻]@MEL=[MEL][deg.] [運用/非運用] の形式で書いております",
+    "",
+    "",
+    "",
+    formatMdInZone(dayStartUtc, timeZone),
   ].filter((line) => line !== null);
   if (rows.length > 0) {
     main.push(...rows.map((row) => passLine(row, timeZone, reportDateYmd)));
