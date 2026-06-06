@@ -74,15 +74,13 @@ function buildReportText({ sat, station, dayStartUtc, reportDateYmd, timeZone, t
     "【パス予報】",
     "使用したTLE",
     "```",
-    tleTextFromSat(sat),
+    tleTextFromSat(sat).trim(),
     "```",
-    "",
     "Pass[No] [AOS時刻]to[LOS時刻]@MEL=[MEL][deg.] [運用/非運用] の形式で書いております",
     "",
-    "",
-    "",
     formatMdInZone(dayStartUtc, timeZone),
-  ].filter((line) => line !== null);
+  ];
+
   if (rows.length > 0) {
     main.push(...rows.map((row) => passLine(row, timeZone, reportDateYmd)));
   } else {
@@ -90,6 +88,7 @@ function buildReportText({ sat, station, dayStartUtc, reportDateYmd, timeZone, t
   }
 
   main.push("", "レーダーチャート");
+
   if (operationRows.length > 0) {
     operationRows.slice(0, RADAR_COLORS.length).forEach((row, i) => {
       main.push(`${RADAR_COLORS[i].name}：Pass[${passIdForDate(reportDateYmd, row.index)}]`);
