@@ -1,0 +1,17 @@
+{
+  "name": "sat-pass-reporter",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "update-tle": "node scripts/update-tle.mjs",
+    "send-pass-report": "node scripts/send-pass-report.mjs",
+    "check": "node --check scripts/update-tle.mjs && node --check scripts/send-pass-report.mjs"
+  },
+  "dependencies": {
+    "satellite.js": "^6.0.1"
+  }
+}

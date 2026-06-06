@@ -1,0 +1,9 @@
+[
+  {
+    "id": "mono-nikko-h",
+    "name": "Mono-Nikko(H)",
+    "catnr": "68799",
+    "url": "https://celestrak.org/NORAD/elements/gp.php?CATNR=68799&FORMAT=TLE",
+    "output": "public/tle/mono-nikko-h.tle"
+  }
+]

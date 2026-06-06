@@ -1,0 +1,17 @@
+# Teikyo GS skyline profile
+# Replace these sample rows with measured azimuth/elevation pairs.
+# azimuth_deg: 0=N, 90=E, 180=S, 270=W
+azimuth_deg,elevation_deg
+0,0
+30,0
+60,0
+90,0
+120,0
+150,0
+180,0
+210,0
+240,0
+270,0
+300,0
+330,0
+360,0

@@ -1,0 +1,35 @@
+{
+  "timezone": "Asia/Tokyo",
+  "min_elevation_deg": 0.0,
+  "satellite_id": "mono-nikko-h",
+  "station": {
+    "id": "Teikyo_Utsunomiya",
+    "name": "Teikyo GS",
+    "latitude_dms": "36°36'18\"N",
+    "longitude_dms": "139°52'54\"E",
+    "latitude_deg": 36.605000000000004,
+    "longitude_deg": 139.88166666666666,
+    "altitude_m": 180,
+    "min_elevation_deg": 0.0
+  },
+  "prediction": {
+    "horizon_hours": 26,
+    "step_sec": 20,
+    "min_elevation_deg": 0.0,
+    "command_elevation_deg": 5.0,
+    "operation_min_elevation_deg": 0.0,
+    "radar_sample_step_sec": 20
+  },
+  "reporting": {
+    "send_mode": "fixed_time",
+    "fixed_send_time": "18:00",
+    "date_selection": "today_when_not_specified",
+    "no_operational_pass_policy": "send_at_fixed_time"
+  },
+  "skyline": {
+    "enabled": true,
+    "csv_path": "config/skyline-teikyo.csv",
+    "format": "azimuth_deg,elevation_deg",
+    "behavior": "draw_profile_and_cut_below_skyline"
+  }
+}
