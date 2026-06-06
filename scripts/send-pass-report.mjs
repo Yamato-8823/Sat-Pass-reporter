@@ -66,7 +66,7 @@ function passIdForDate(reportDateYmd, index) {
 
 function passLine(row, timeZone, reportDateYmd) {
   const pass = row.pass;
-  return `Pass[${passIdForDate(reportDateYmd, row.index)}] ${formatHmInZone(pass.aos, timeZone)}to${formatHmInZone(pass.los, timeZone)}@MEL=${pass.maxElDeg.toFixed(1)}[deg.] [${row.status}]`;
+  return `Pass[${passIdForDate(reportDateYmd, row.index)}] ${formatHmInZone(pass.aos, timeZone)} to ${formatHmInZone(pass.los, timeZone)} @ MEL=${pass.maxElDeg.toFixed(1)}[deg.] [${row.status}]`;
 }
 
 function buildReportText({ sat, station, dayStartUtc, reportDateYmd, timeZone, thresholdDeg, rows, operationRows, sendReason, skylineProfile, skylineCsvPath }) {
@@ -76,7 +76,7 @@ function buildReportText({ sat, station, dayStartUtc, reportDateYmd, timeZone, t
     "```",
     tleTextFromSat(sat).trim(),
     "```",
-    "Pass[No] [AOS時刻]to[LOS時刻]@MEL=[MEL][deg.] [運用/非運用] の形式で書いております",
+    "Pass[日付No] [AOS時刻]to[LOS時刻]@MEL=[MEL][deg.] [運用/非運用] の形式で書いております",
     "",
     formatMdInZone(dayStartUtc, timeZone),
   ];
@@ -131,7 +131,7 @@ function rowsForDate({ sat, station, reportDateYmd, timeZone, prediction, thresh
   const allPasses = predictPasses(sat, station, dayStartUtc, {
     horizon_hours: numberOr(prediction.horizon_hours, 26),
     step_sec: numberOr(prediction.step_sec, 20),
-    command_elevation_deg: numberOr(prediction.command_elevation_deg, 5),
+    command_elevation_deg: numberOr(prediction.report_min_elevation_deg, 0),
   });
 
   // 26時間予測にして、深夜またぎLOSを取りこぼさない。
