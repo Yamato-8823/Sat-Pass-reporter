@@ -201,24 +201,27 @@ function evaluateEligibility({ reportDateYmd, now, timeZone, operationRows, repo
   return { eligible: false, reason: `運用可能PASSなし、${sendTime}前` };
 }
 
-function cutRadarRowsToVisibleSegments(rows, thresholdDeg, skylineProfile) {
-  // レーダーチャートは「非運用時の部分」を描かない。
-  // N度以下、およびスカイラインCSVで遮蔽される仰角以下のサンプル点を落とす。
-  const segments = [];
-  let current = [];
+function cutRadarRowsToVisibleSegments(rows, _thresholdDeg, _skylineProfile) {
+  // レーダーチャートは運用PASSの軌道を0度から描く。
+  // N度以下・スカイライン以下でも軌道線はカットしない。
+  // ただし地平線より下の点は描かない。
+  const visibleRows = (Array.isArray(rows) ? rows : []).filter(
+    (point) => Number(point.elDeg) >= -0.05
+  );
 
-  for (const point of Array.isArray(rows) ? rows : []) {
-    const visible = Number(point.elDeg) > thresholdDeg && isAboveSkyline(point, skylineProfile);
-    if (visible) {
-      current.push(point);
-    } else if (current.length > 0) {
-      if (current.length >= 2) segments.push(current);
-      current = [];
-    }
-  }
+  return visibleRows.length >= 2 ? [visibleRows] : [];
+}
 
-  if (current.length >= 2) segments.push(current);
-  return segments;
+function findRadarPassForRow(row, radarPasses) {
+  const maxElTime = row.pass.maxElTime?.getTime?.() ?? row.pass.aos.getTime();
+
+  return (
+    radarPasses.find(
+      (pass) =>
+        pass.aos.getTime() <= maxElTime &&
+        maxElTime <= pass.los.getTime()
+    ) || row.pass
+  );
 }
 
 async function sendReportForDate({ token, channel, config, sat, skylineProfile, reportDateYmd, now, forceSend }) {
@@ -275,14 +278,23 @@ async function sendReportForDate({ token, channel, config, sat, skylineProfile, 
   });
 
   const radarStepSec = numberOr(prediction.radar_sample_step_sec, 20);
+
+  const radarPassesFromZeroDeg = predictPasses(sat, station, dayStartUtc, {
+    horizon_hours: numberOr(prediction.horizon_hours, 26),
+    step_sec: numberOr(prediction.step_sec, 20),
+    command_elevation_deg: numberOr(prediction.radar_min_elevation_deg, 0),
+  });
+
   const passSeries = operationRows
     .slice(0, RADAR_COLORS.length)
     .flatMap((row, i) => {
+      const radarPass = findRadarPassForRow(row, radarPassesFromZeroDeg);
       const segments = cutRadarRowsToVisibleSegments(
-        sampleRadarPath(sat, station, row.pass, radarStepSec),
+        sampleRadarPath(sat, station, radarPass, radarStepSec),
         thresholdDeg,
         skylineProfile
       );
+
       return segments.map((segmentRows, segmentIndex) => ({
         label: `Pass[${passIdForDate(reportDateYmd, row.index)}]${segmentIndex ? `-${segmentIndex + 1}` : ""}`,
         color: RADAR_COLORS[i].color,
