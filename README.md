@@ -6,7 +6,7 @@ Sat-Pass-reporter は、人工衛星の TLE を取得し、指定した地上局
 
 ## 開発背景
 
-本プロジェクトは、FujimotoShota-toruca 氏の [`satpass-ops-console`](https://github.com/FujimotoShota-toruca/satpass-ops-console) をベースにしています。
+本プロジェクトは、 [`satpass-ops-console`](https://github.com/FujimotoShota-toruca/satpass-ops-console) をベースにしています。
 
 `satpass-ops-console` は、TLE と地上局情報を用いて、衛星の地上軌跡、可視パス、方位角・仰角、日照/蝕、Doppler CSV などを表示・出力する運用支援アプリです。
 
