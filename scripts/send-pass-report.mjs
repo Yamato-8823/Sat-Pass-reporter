@@ -73,19 +73,14 @@ function passLine(row, timeZone, reportDateYmd) {
 function buildReportText({ sat, station, dayStartUtc, reportDateYmd, timeZone, thresholdDeg, rows, operationRows, sendReason, skylineProfile, skylineCsvPath }) {
   const main = [
     "【パス予報】",
-    `判定基準: MEL <= ${thresholdDeg.toFixed(1)}[deg.] は [非運用]`,
-    `レーダーチャート: 非運用PASS、N度以下の低仰角部分、スカイライン以下の部分はカット`,
-    skylineProfile?.length ? `スカイライン: ${skylineCsvPath}` : null,
-    sendReason ? `送信判定: ${sendReason}` : null,
-    "",
     "使用したTLE",
     "```",
     tleTextFromSat(sat),
     "```",
     "",
     formatMdInZone(dayStartUtc, timeZone),
+    "Pass[No] [AOS時刻]to[LOS時刻]@MEL=[MEL][deg.] [運用/非運用] の形式で書いております",
   ].filter((line) => line !== null);
-
   if (rows.length > 0) {
     main.push(...rows.map((row) => passLine(row, timeZone, reportDateYmd)));
   } else {
