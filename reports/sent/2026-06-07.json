@@ -1,9 +1,9 @@
 {
   "date": "2026-06-07",
-  "sent_at_utc": "2026-06-06T15:07:19.679Z",
-  "slack_ts": "1780758439.006039",
+  "sent_at_utc": "2026-06-06T15:38:04.001Z",
+  "slack_ts": "1780760283.046859",
   "operation_count": 3,
   "non_operation_count": 1,
   "threshold_deg": 10,
-  "reason": "18:00 JST 定時送信"
+  "reason": "手動実行のため強制送信"
 }
