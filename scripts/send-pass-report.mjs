@@ -43,29 +43,24 @@ async function exists(filePath) {
 }
 
 function passIdForDate(reportDateYmd, index) {
-  const [, month, day] = String(reportDateYmd).split("-");
-  return `${month}${day}-${passNo(index)}`;
+  return passNo(index);
 }
 
 function passLine(row, timeZone, reportDateYmd) {
   const pass = row.pass;
-  return `Pass[${passIdForDate(reportDateYmd, row.index)}] ${formatHmInZone(pass.aos, timeZone)}to${formatHmInZone(pass.los, timeZone)}@MEL=${pass.maxElDeg.toFixed(1)}[deg.]`;
+  return `Pass[${passIdForDate(reportDateYmd, row.index)}] ${formatHmInZone(pass.aos, timeZone)} to ${formatHmInZone(pass.los, timeZone)} @ MEL=${pass.maxElDeg.toFixed(1)}[deg.]`;
 }
 
 function buildReportText({ sat, dayStartUtc, reportDateYmd, timeZone, rows, skylineProfile, skylineCsvPath }) {
   const main = [
     "【パス予報】",
-    "表示形式: Pass[No] [AOS時刻]to[LOS時刻]@MEL=[MEL][deg.]",
-    "RadarChart: 全PASS軌道を表示。スカイライン以下の部分はカット。",
-    skylineProfile?.length ? `スカイライン: ${skylineCsvPath}` : null,
-    "",
     "使用したTLE",
-    "```",
     tleTextFromSat(sat),
-    "```",
+    "",
+    "Pass[No] [AOS時刻]to[LOS時刻]@MEL=[MEL][deg.] の形式で書いております",
     "",
     formatMdInZone(dayStartUtc, timeZone),
-  ].filter((line) => line !== null);
+  ];
 
   if (rows.length > 0) {
     main.push(...rows.map((row) => passLine(row, timeZone, reportDateYmd)));
@@ -75,8 +70,9 @@ function buildReportText({ sat, dayStartUtc, reportDateYmd, timeZone, rows, skyl
 
   main.push("", "レーダーチャート");
   if (rows.length > 0) {
-    rows.slice(0, RADAR_COLORS.length).forEach((row, i) => {
-      main.push(`${RADAR_COLORS[i].name}：Pass[${passIdForDate(reportDateYmd, row.index)}]`);
+    rows.forEach((row, i) => {
+      const color = RADAR_COLORS[i % RADAR_COLORS.length];
+      main.push(`${color.name}：Pass[${passIdForDate(reportDateYmd, row.index)}]`);
     });
   } else {
     main.push("表示対象PASSなし");
@@ -176,21 +172,14 @@ async function sendReportForDate({ token, channel, config, sat, skylineProfile, 
   });
 
   const radarStepSec = numberOr(prediction.radar_sample_step_sec, 1);
-  const radarMinElevationDeg = numberOr(prediction.radar_min_elevation_deg, numberOr(prediction.min_elevation_deg, 0));
-  const passSeries = rows
-    .slice(0, RADAR_COLORS.length)
-    .flatMap((row, i) => {
-      const segments = cutRadarRowsToVisibleSegments(
-        sampleRadarPath(sat, station, row.pass, radarStepSec),
-        radarMinElevationDeg,
-        skylineProfile
-      );
-      return segments.map((segmentRows, segmentIndex) => ({
-        label: `Pass[${passIdForDate(reportDateYmd, row.index)}]${segmentIndex ? `-${segmentIndex + 1}` : ""}`,
-        color: RADAR_COLORS[i].color,
-        rows: segmentRows,
-      }));
-    });
+  const passSeries = rows.map((row, i) => {
+    const color = RADAR_COLORS[i % RADAR_COLORS.length];
+    return {
+      label: `Pass[${passIdForDate(reportDateYmd, row.index)}]`,
+      color: color.color,
+      rows: sampleRadarPath(sat, station, row.pass, radarStepSec),
+    };
+  });
 
   const png = renderRadarPng(passSeries, { width: 900, height: 900, skylineProfile });
 
