@@ -139,17 +139,127 @@ function interpolateCrossing(prevTime, prevEl, currTime, currEl, thresholdDeg) {
   return new Date(prevTime.getTime() + ratio * (currTime.getTime() - prevTime.getTime()));
 }
 
+
+function positiveNumberOr(value, fallback) {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
+
+function refineCrossingTime({
+  satrec,
+  station,
+  prevTime,
+  prevEl,
+  currTime,
+  currEl,
+  thresholdDeg,
+  wantAbove,
+  epsilonSec,
+}) {
+  const fallback = interpolateCrossing(
+    prevTime,
+    prevEl,
+    currTime,
+    currEl,
+    thresholdDeg
+  );
+
+  let lo = prevTime;
+  let hi = currTime;
+  let best = currTime;
+
+  while ((hi.getTime() - lo.getTime()) / 1000 > epsilonSec) {
+    const mid = new Date((lo.getTime() + hi.getTime()) / 2);
+    const look = lookAnglesAt(satrec, station, mid);
+
+    if (!look) return fallback;
+
+    const isAbove = look.elDeg >= thresholdDeg;
+
+    if (isAbove === wantAbove) {
+      best = mid;
+      hi = mid;
+    } else {
+      lo = mid;
+    }
+  }
+
+  return best;
+}
+
+function refineMaxElevation({
+  satrec,
+  station,
+  aos,
+  los,
+  coarseBestTime,
+  coarseStepSec,
+  refineTimeSec,
+}) {
+  const stepMs = Math.max(
+    1,
+    Math.round(positiveNumberOr(refineTimeSec, 0.1) * 1000)
+  );
+
+  const windowSec = Math.max(5, positiveNumberOr(coarseStepSec, 20) * 1.5);
+
+  const aosMs = aos.getTime();
+  const losMs = los.getTime();
+  const centerMs = coarseBestTime.getTime();
+
+  const startMs = Math.max(aosMs, centerMs - windowSec * 1000);
+  const endMs = Math.min(losMs, centerMs + windowSec * 1000);
+
+  let bestTime = new Date(Math.max(startMs, Math.min(centerMs, endMs)));
+  let bestLook = lookAnglesAt(satrec, station, bestTime);
+
+  for (let ms = startMs; ms <= endMs; ms += stepMs) {
+    const time = new Date(ms);
+    const look = lookAnglesAt(satrec, station, time);
+
+    if (look && (!bestLook || look.elDeg > bestLook.elDeg)) {
+      bestLook = look;
+      bestTime = time;
+    }
+  }
+
+  for (const ms of [startMs, endMs]) {
+    const time = new Date(ms);
+    const look = lookAnglesAt(satrec, station, time);
+
+    if (look && (!bestLook || look.elDeg > bestLook.elDeg)) {
+      bestLook = look;
+      bestTime = time;
+    }
+  }
+
+  return {
+    maxElTime: bestTime,
+    maxElDeg: bestLook?.elDeg ?? null,
+  };
+}
+
 export function predictPasses(tle, station, startUtc, options = {}) {
   const horizonHours = Number(options.horizon_hours ?? 24);
-  const stepSec = Number(options.step_sec ?? 20);
+
+  const coarseStepSec = positiveNumberOr(
+    options.coarse_step_sec ?? options.step_sec,
+    20
+  );
+
+  const refineTimeSec = positiveNumberOr(options.refine_time_sec, 0.1);
   const commandElevationDeg = Number(options.command_elevation_deg ?? 5);
+
   const satrec = makeSatrec(tle);
   const endUtc = addSeconds(startUtc, horizonHours * 3600);
+
   const passes = [];
 
   let prevTime = startUtc;
   let prevLook = lookAnglesAt(satrec, station, prevTime);
+
   let inPass = prevLook && prevLook.elDeg >= commandElevationDeg;
+
   let current = inPass
     ? {
         aos: startUtc,
@@ -159,8 +269,13 @@ export function predictPasses(tle, station, startUtc, options = {}) {
       }
     : null;
 
-  for (let t = addSeconds(startUtc, stepSec); t <= endUtc; t = addSeconds(t, stepSec)) {
+  for (
+    let t = addSeconds(startUtc, coarseStepSec);
+    t <= endUtc;
+    t = addSeconds(t, coarseStepSec)
+  ) {
     const look = lookAnglesAt(satrec, station, t);
+
     if (!look || !prevLook) {
       prevTime = t;
       prevLook = look;
@@ -171,8 +286,25 @@ export function predictPasses(tle, station, startUtc, options = {}) {
     const isAbove = look.elDeg >= commandElevationDeg;
 
     if (!inPass && !wasAbove && isAbove) {
-      const aos = interpolateCrossing(prevTime, prevLook.elDeg, t, look.elDeg, commandElevationDeg);
-      current = { aos, los: null, maxElDeg: look.elDeg, maxElTime: t };
+      const aos = refineCrossingTime({
+        satrec,
+        station,
+        prevTime,
+        prevEl: prevLook.elDeg,
+        currTime: t,
+        currEl: look.elDeg,
+        thresholdDeg: commandElevationDeg,
+        wantAbove: true,
+        epsilonSec: refineTimeSec,
+      });
+
+      current = {
+        aos,
+        los: null,
+        maxElDeg: look.elDeg,
+        maxElTime: t,
+      };
+
       inPass = true;
     }
 
@@ -182,8 +314,35 @@ export function predictPasses(tle, station, startUtc, options = {}) {
     }
 
     if (inPass && wasAbove && !isAbove) {
-      const los = interpolateCrossing(prevTime, prevLook.elDeg, t, look.elDeg, commandElevationDeg);
+      const los = refineCrossingTime({
+        satrec,
+        station,
+        prevTime,
+        prevEl: prevLook.elDeg,
+        currTime: t,
+        currEl: look.elDeg,
+        thresholdDeg: commandElevationDeg,
+        wantAbove: false,
+        epsilonSec: refineTimeSec,
+      });
+
       current.los = los;
+
+      const refinedMax = refineMaxElevation({
+        satrec,
+        station,
+        aos: current.aos,
+        los: current.los,
+        coarseBestTime: current.maxElTime,
+        coarseStepSec,
+        refineTimeSec,
+      });
+
+      if (refinedMax.maxElDeg !== null) {
+        current.maxElDeg = refinedMax.maxElDeg;
+        current.maxElTime = refinedMax.maxElTime;
+      }
+
       passes.push(current);
       current = null;
       inPass = false;
@@ -195,6 +354,22 @@ export function predictPasses(tle, station, startUtc, options = {}) {
 
   if (inPass && current) {
     current.los = endUtc;
+
+    const refinedMax = refineMaxElevation({
+      satrec,
+      station,
+      aos: current.aos,
+      los: current.los,
+      coarseBestTime: current.maxElTime,
+      coarseStepSec,
+      refineTimeSec,
+    });
+
+    if (refinedMax.maxElDeg !== null) {
+      current.maxElDeg = refinedMax.maxElDeg;
+      current.maxElTime = refinedMax.maxElTime;
+    }
+
     passes.push(current);
   }
 

@@ -133,9 +133,13 @@ function rowsForDate({ sat, station, reportDateYmd, timeZone, prediction }) {
   const allPasses = predictPasses(sat, station, dayStartUtc, {
     horizon_hours: numberOr(prediction.horizon_hours, 26),
     step_sec: numberOr(prediction.step_sec, 20),
+    coarse_step_sec: numberOr(
+      prediction.coarse_step_sec,
+      numberOr(prediction.step_sec, 20)
+    ),
+    refine_time_sec: numberOr(prediction.refine_time_sec, 0.1),
     command_elevation_deg: numberOr(prediction.command_elevation_deg, 5),
   });
-
   // 26時間予測で深夜またぎLOSを拾いつつ、翌日AOSのPASSは当日レポートに混ぜない。
   const passes = allPasses.filter((pass) => formatYmdInZone(pass.aos, timeZone) === reportDateYmd);
 
