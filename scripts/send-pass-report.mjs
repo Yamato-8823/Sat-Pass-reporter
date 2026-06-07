@@ -51,11 +51,18 @@ function passLine(row, timeZone, reportDateYmd) {
   return `Pass[${passIdForDate(reportDateYmd, row.index)}] ${formatHmInZone(pass.aos, timeZone)} to ${formatHmInZone(pass.los, timeZone)} @ MEL=${pass.maxElDeg.toFixed(1)}[deg.]`;
 }
 
+
+function displayTleText(sat) {
+  return `Mono-Nikko(H)\n${sat.line1}\n${sat.line2}`;
+}
+
 function buildReportText({ sat, dayStartUtc, reportDateYmd, timeZone, rows, skylineProfile, skylineCsvPath }) {
   const main = [
     "【パス予報】",
     "使用したTLE",
-    tleTextFromSat(sat),
+    "```",
+    displayTleText(sat),
+    "```",
     "",
     "Pass[No] [AOS時刻]to[LOS時刻]@MEL=[MEL][deg.] の形式で書いております",
     "",

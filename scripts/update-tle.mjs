@@ -22,7 +22,7 @@ function normalizeTle(text, fallbackName = "UNKNOWN") {
     throw new Error("TLE line1/line2 not found.");
   }
 
-  const name = line1Index > 0 ? lines[line1Index - 1].trim() : fallbackName;
+  const name = fallbackName || (line1Index > 0 ? lines[line1Index - 1].trim() : "UNKNOWN");
   const line1 = lines[line1Index].trim();
   const line2 = lines[line2Index].trim();
 
