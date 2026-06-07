@@ -76,7 +76,7 @@ jobs:
 
           TARGET_DATE="${{ github.event.inputs.date_ymd }}"
           if [ -z "$TARGET_DATE" ]; then
-            TARGET_DATE="$(TZ=Asia/Tokyo date +%F)"
+            TARGET_DATE="$(TZ=Asia/Tokyo date -d 'tomorrow' +%F)"
           fi
 
           if [ "${{ github.event.inputs.force_send || 'false' }}" = "true" ]; then
