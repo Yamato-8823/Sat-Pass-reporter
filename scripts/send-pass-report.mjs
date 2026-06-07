@@ -58,6 +58,20 @@ function displayTleText(sat) {
 
 function buildReportText({ sat, dayStartUtc, reportDateYmd, timeZone, rows, skylineProfile, skylineCsvPath }) {
   const main = [
+    ...(boolFromEnv(process.env.PASS_TEST_MODE)
+
+      ? [
+
+          "*※これはテストです*", 
+
+          "*実際の結果とは異なる可能性があります*",
+
+          "",
+
+        ]
+
+      : []),
+
     "【パス予報】",
     "使用したTLE",
     "```",

@@ -76,6 +76,7 @@ jobs:
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+          PASS_TEST_MODE: ${{ github.event_name == 'workflow_dispatch' }}
 
       - name: Commit TLE/report markers if changed
         run: |
