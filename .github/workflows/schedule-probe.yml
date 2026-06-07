@@ -13,4 +13,5 @@ jobs:
         run: |
           echo "event_name=${{ github.event_name }}"
           echo "schedule=${{ github.event.schedule }}"
+          echo "ref=${{ github.ref }}"
           date -u
