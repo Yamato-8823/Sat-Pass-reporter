@@ -3,10 +3,6 @@ import * as satellite from "satellite.js";
 const RAD2DEG = 180 / Math.PI;
 const DEG2RAD = Math.PI / 180;
 
-export function pad2(n) {
-  return String(n).padStart(2, "0");
-}
-
 export function parseTleBlock(tleText) {
   const lines = String(tleText)
     .split(/\r?\n/)
@@ -26,10 +22,6 @@ export function parseTleBlock(tleText) {
 
 export function tleTextFromSat(sat) {
   return `${sat.name}\n${sat.line1}\n${sat.line2}`;
-}
-
-export function tleEpochLabel(line1) {
-  return String(line1).slice(18, 32).trim();
 }
 
 export function formatYmdInZone(date, timeZone = "Asia/Tokyo") {
@@ -227,8 +219,4 @@ export function sampleRadarPath(tle, station, pass, stepSec = 20) {
 
 export function passNo(index) {
   return String(index + 1).padStart(2, "0");
-}
-
-export function classifyPass(pass, operationMinElevationDeg) {
-  return pass.maxElDeg <= operationMinElevationDeg ? "非運用" : "運用";
 }

@@ -9,7 +9,7 @@
   "scripts": {
     "update-tle": "node scripts/update-tle.mjs",
     "send-pass-report": "node scripts/send-pass-report.mjs",
-    "check": "node --check scripts/update-tle.mjs && node --check scripts/send-pass-report.mjs"
+    "check": "node --check scripts/update-tle.mjs && node --check scripts/send-pass-report.mjs && node --check scripts/lib/satpass-core.mjs && node --check scripts/lib/radar-png.mjs && node --check scripts/lib/slack-client.mjs"
   },
   "dependencies": {
     "satellite.js": "^6.0.1"

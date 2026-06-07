@@ -1,6 +1,6 @@
 import zlib from "node:zlib";
 
-const DEFAULT_COLORS = ["#38bdf8", "#a3e635", "#f472b6", "#fb923c", "#a78bfa", "#fb7185"];
+const DEFAULT_COLORS = ["#38bdf8", "#a3e635", "#f472b6", "#fb923c", "#a78bfa", "#fb7185", "#fde047", "#2dd4bf", "#c084fc", "#fb7185"];
 
 const FONT = {
   " ": ["000", "000", "000", "000", "000", "000", "000"],
@@ -133,53 +133,6 @@ function azElToXY(azDeg, elDeg, cx, cy, radius) {
   };
 }
 
-function crc32(buf) {
-  let crc = -1;
-  for (let i = 0; i < buf.length; i += 1) {
-    crc ^= buf[i];
-    for (let j = 0; j < 8; j += 1) {
-      crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1));
-    }
-  }
-  return (crc ^ -1) >>> 0;
-}
-
-function pngChunk(type, data) {
-  const typeBuf = Buffer.from(type, "ascii");
-  const length = Buffer.alloc(4);
-  length.writeUInt32BE(data.length, 0);
-  const crc = Buffer.alloc(4);
-  crc.writeUInt32BE(crc32(Buffer.concat([typeBuf, data])), 0);
-  return Buffer.concat([length, typeBuf, data, crc]);
-}
-
-function encodePng(canvas) {
-  const signature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
-  const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(canvas.width, 0);
-  ihdr.writeUInt32BE(canvas.height, 4);
-  ihdr[8] = 8; // bit depth
-  ihdr[9] = 6; // RGBA
-  ihdr[10] = 0;
-  ihdr[11] = 0;
-  ihdr[12] = 0;
-
-  const scanlineLength = canvas.width * 4 + 1;
-  const raw = Buffer.alloc(scanlineLength * canvas.height);
-  for (let y = 0; y < canvas.height; y += 1) {
-    raw[y * scanlineLength] = 0;
-    canvas.pixels.copy(raw, y * scanlineLength + 1, y * canvas.width * 4, (y + 1) * canvas.width * 4);
-  }
-
-  return Buffer.concat([
-    signature,
-    pngChunk("IHDR", ihdr),
-    pngChunk("IDAT", zlib.deflateSync(raw, { level: 9 })),
-    pngChunk("IEND", Buffer.alloc(0)),
-  ]);
-}
-
-
 export function parseSkylineCsv(csvText) {
   const rawLines = String(csvText || "")
     .split(/\r?\n/)
@@ -280,6 +233,52 @@ function drawSkylineProfile(canvas, profile, cx, cy, radius) {
   }
 }
 
+function crc32(buf) {
+  let crc = -1;
+  for (let i = 0; i < buf.length; i += 1) {
+    crc ^= buf[i];
+    for (let j = 0; j < 8; j += 1) {
+      crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1));
+    }
+  }
+  return (crc ^ -1) >>> 0;
+}
+
+function pngChunk(type, data) {
+  const typeBuf = Buffer.from(type, "ascii");
+  const length = Buffer.alloc(4);
+  length.writeUInt32BE(data.length, 0);
+  const crc = Buffer.alloc(4);
+  crc.writeUInt32BE(crc32(Buffer.concat([typeBuf, data])), 0);
+  return Buffer.concat([length, typeBuf, data, crc]);
+}
+
+function encodePng(canvas) {
+  const signature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(canvas.width, 0);
+  ihdr.writeUInt32BE(canvas.height, 4);
+  ihdr[8] = 8;
+  ihdr[9] = 6;
+  ihdr[10] = 0;
+  ihdr[11] = 0;
+  ihdr[12] = 0;
+
+  const scanlineLength = canvas.width * 4 + 1;
+  const raw = Buffer.alloc(scanlineLength * canvas.height);
+  for (let y = 0; y < canvas.height; y += 1) {
+    raw[y * scanlineLength] = 0;
+    canvas.pixels.copy(raw, y * scanlineLength + 1, y * canvas.width * 4, (y + 1) * canvas.width * 4);
+  }
+
+  return Buffer.concat([
+    signature,
+    pngChunk("IHDR", ihdr),
+    pngChunk("IDAT", zlib.deflateSync(raw, { level: 9 })),
+    pngChunk("IEND", Buffer.alloc(0)),
+  ]);
+}
+
 export function renderRadarPng(passSeries, options = {}) {
   const width = Number(options.width || 900);
   const height = Number(options.height || 900);
@@ -336,4 +335,8 @@ export const RADAR_COLORS = [
   { name: "橙色", color: "#fb923c" },
   { name: "紫色", color: "#a78bfa" },
   { name: "赤色", color: "#fb7185" },
+  { name: "黄色", color: "#fde047" },
+  { name: "青緑", color: "#2dd4bf" },
+  { name: "薄紫", color: "#c084fc" },
+  { name: "薄赤", color: "#fb7185" }
 ];

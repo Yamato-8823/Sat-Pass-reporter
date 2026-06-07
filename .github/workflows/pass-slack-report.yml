@@ -1,18 +1,11 @@
 name: PASS Slack Report 18 JST
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 on:
   schedule:
     # GitHub Actions cron is UTC. 09:00 UTC = 18:00 JST.
     - cron: "0 9 * * *"
   workflow_dispatch:
     inputs:
-      operation_min_elevation_deg:
-        description: "MEL threshold. MEL <= this value is non-operation."
-        required: false
-        default: "10"
       date_ymd:
         description: "Target date in report timezone, e.g. 2026-06-07. Empty means today in Asia/Tokyo."
         required: false
@@ -35,12 +28,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 22
 
       - name: Install dependencies
         run: npm ci
@@ -76,12 +69,10 @@ jobs:
 
           PASS_REPORT_DATE_YMD="$TARGET_DATE" \
           PASS_FORCE_SEND="$PASS_FORCE_SEND" \
-          PASS_SKIP_LOS_CHECK=true \
           node scripts/send-pass-report.mjs
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
-          PASS_OPERATION_MIN_ELEVATION_DEG: ${{ github.event.inputs.operation_min_elevation_deg || vars.PASS_OPERATION_MIN_ELEVATION_DEG || '10' }}
 
       - name: Commit TLE/report markers if changed
         run: |
@@ -94,5 +85,4 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add public/tle reports
           git commit -m "Update TLE or PASS report marker"
-          git pull --rebase origin main
-          git push origin HEAD:main
+          git push

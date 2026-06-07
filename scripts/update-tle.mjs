@@ -45,7 +45,7 @@ async function readTextIfExists(filePath) {
 async function fetchTle(source) {
   const response = await fetch(source.url, {
     headers: {
-      "User-Agent": "satpass-ops-console/online-tle-updater (+GitHub Actions)",
+      "User-Agent": "sat-pass-reporter/1.0 (+GitHub Actions)",
     },
     redirect: "follow",
   });

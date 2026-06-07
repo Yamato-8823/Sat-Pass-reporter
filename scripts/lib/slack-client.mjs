@@ -34,12 +34,11 @@ async function slackApi(method, token, body, contentType = "json") {
 }
 
 export async function postMessage({ token, channel, text, threadTs }) {
-  const payload = await slackApi("chat.postMessage", token, {
+  return await slackApi("chat.postMessage", token, {
     channel,
     text,
     ...(threadTs ? { thread_ts: threadTs } : {}),
   });
-  return payload;
 }
 
 export async function uploadFileExternal({ token, channel, threadTs, buffer, filename, title, initialComment }) {
@@ -67,7 +66,7 @@ export async function uploadFileExternal({ token, channel, threadTs, buffer, fil
     throw new Error(`Slack file binary upload failed HTTP ${uploadResponse.status}: ${text.slice(0, 500)}`);
   }
 
-  const complete = await slackApi("files.completeUploadExternal", token, {
+  return await slackApi("files.completeUploadExternal", token, {
     channel_id: channel,
     thread_ts: threadTs,
     initial_comment: initialComment || "",
@@ -78,6 +77,4 @@ export async function uploadFileExternal({ token, channel, threadTs, buffer, fil
       },
     ],
   });
-
-  return complete;
 }
