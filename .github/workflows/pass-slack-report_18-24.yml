@@ -5,7 +5,7 @@ on:
     # GitHub Actions cron is UTC.
     # 09:03-14:58 UTC = 18:03-23:58 JST.
     # Run every 5 minutes during the 18:00-24:00 JST window.
-    - cron: "3,8,13,18,23,28,33,38,43,48,53,58 9-14 * * *"
+    - cron: "3,13,23,33,43,53 9-14 * * *"
 
   workflow_dispatch:
     inputs:
