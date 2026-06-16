@@ -56,12 +56,12 @@ Sat-Pass-reporter
 
 ## 必要環境
 
-* Node.js 20 以上
+* Node.js 24 以上
 * npm
 * Slack App
 * GitHub Actions
 
-GitHub Actions では Node.js 20 を使用します。
+GitHub Actions では Node.js 24 を使用します。
 
 ## セットアップ
 
