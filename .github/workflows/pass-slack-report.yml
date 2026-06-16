@@ -27,7 +27,7 @@ on:
       slack_target:
         description: "test or prod."
         required: false
-        default: "test"
+        default: "prod"
 
 permissions:
   contents: write
