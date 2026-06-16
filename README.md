@@ -335,7 +335,7 @@ reports/sent/2026-06-17.json
 | `date_ymd`                    | 対象日。例: `2026-06-17`。空なら JST の翌日 | 空       |
 | `operation_min_elevation_deg` | MEL 判定しきい値                      | `10`    |
 | `force_send`                  | 送信済みでも再送するか                     | `false` |
-| `slack_target`                | `test` または `prod`               | `prod`  |
+| `slack_target`                | `test` または `prod`               | `test`  |
 
 ### Recover Today PASS Report 00-02 JST
 
@@ -346,7 +346,7 @@ reports/sent/2026-06-17.json
 | `date_ymd`                    | 対象日。例: `2026-06-17`。空なら JST の当日 | 空       |
 | `operation_min_elevation_deg` | MEL 判定しきい値                      | `10`    |
 | `force_send`                  | 送信済みでも再送するか                     | `false` |
-| `slack_target`                | `test` または `prod`               | `prod`  |
+| `slack_target`                | `test` または `prod`               | `test`  |
 
 `slack_target` の対応は以下です。
 
