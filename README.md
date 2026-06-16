@@ -499,7 +499,7 @@ SLACK_BOT_TOKEN_1
 SLACK_CHANNEL_ID_1
 ```
 
-本番送信したい場合は、手動実行時に `slack_target=prod` を指定してください。
+通常は `slack_target=test` でテスト送信します。本番送信したい場合は、手動実行時に `slack_target=prod` を指定してください。
 
 ## 注意事項
 

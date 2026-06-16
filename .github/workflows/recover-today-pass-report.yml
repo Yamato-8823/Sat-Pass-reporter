@@ -21,7 +21,7 @@ on:
       slack_target:
         description: "test or prod."
         required: false
-        default: "prod"
+        default: "test"
       operation_min_elevation_deg:
         description: "MEL threshold."
         required: false
