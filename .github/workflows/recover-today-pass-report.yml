@@ -1,0 +1,234 @@
+name: Recover Today PASS Report 00-02 JST
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+on:
+  schedule:
+    - cron: "0 0-2 * * *"
+      timezone: "Asia/Tokyo"
+
+  workflow_dispatch:
+    inputs:
+      date_ymd:
+        description: "Target report date in Asia/Tokyo. Empty means JST today."
+        required: false
+        default: ""
+      force_send:
+        description: "true = send even if already sent marker exists."
+        required: false
+        default: "false"
+      slack_target:
+        description: "test or prod."
+        required: false
+        default: "test"
+      operation_min_elevation_deg:
+        description: "MEL threshold."
+        required: false
+        default: "10"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pass-slack-report
+  cancel-in-progress: false
+
+jobs:
+  recover-today-report:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check JST recovery window
+        id: window
+        env:
+          IS_MANUAL: ${{ github.event_name == 'workflow_dispatch' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          JST_HOUR="$(TZ=Asia/Tokyo date +%H)"
+          JST_NOW="$(TZ=Asia/Tokyo date +%F\ %T)"
+
+          echo "jst_hour=$JST_HOUR" >> "$GITHUB_OUTPUT"
+          echo "jst_now=$JST_NOW" >> "$GITHUB_OUTPUT"
+
+          if [ "$IS_MANUAL" = "true" ]; then
+            echo "within_window=true" >> "$GITHUB_OUTPUT"
+            echo "Manual run. Recovery window check is bypassed."
+            exit 0
+          fi
+
+          case "$JST_HOUR" in
+            00|01|02)
+              echo "within_window=true" >> "$GITHUB_OUTPUT"
+              echo "Within JST recovery window: $JST_NOW"
+              ;;
+            *)
+              echo "within_window=false" >> "$GITHUB_OUTPUT"
+              echo "Outside JST recovery window: $JST_NOW"
+              ;;
+          esac
+
+      - name: Stop outside JST recovery window
+        if: steps.window.outputs.within_window != 'true'
+        run: |
+          echo "Recovery is allowed only from 00:00 to 02:59 JST."
+
+      - name: Checkout
+        if: steps.window.outputs.within_window == 'true'
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        if: steps.window.outputs.within_window == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        if: steps.window.outputs.within_window == 'true'
+        run: npm ci
+
+      - name: Resolve report date and markers
+        if: steps.window.outputs.within_window == 'true'
+        id: markers
+        env:
+          INPUT_DATE_YMD: ${{ github.event.inputs.date_ymd || '' }}
+          INPUT_FORCE_SEND: ${{ github.event.inputs.force_send || 'false' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ -n "${INPUT_DATE_YMD:-}" ]; then
+            REPORT_DATE="$INPUT_DATE_YMD"
+          else
+            REPORT_DATE="$(TZ=Asia/Tokyo date +%F)"
+          fi
+
+          TLE_MARKER="reports/tle-updated/${REPORT_DATE}.json"
+          SENT_MARKER="reports/sent/${REPORT_DATE}.json"
+
+          echo "report_date=$REPORT_DATE" >> "$GITHUB_OUTPUT"
+          echo "tle_marker=$TLE_MARKER" >> "$GITHUB_OUTPUT"
+          echo "sent_marker=$SENT_MARKER" >> "$GITHUB_OUTPUT"
+
+          echo "Report date: $REPORT_DATE"
+          echo "TLE marker:  $TLE_MARKER"
+          echo "Sent marker: $SENT_MARKER"
+
+          TLE_MISSING=false
+          SENT_MISSING=false
+
+          if [ ! -f "$TLE_MARKER" ]; then
+            TLE_MISSING=true
+          fi
+
+          if [ ! -f "$SENT_MARKER" ]; then
+            SENT_MISSING=true
+          fi
+
+          echo "tle_missing=$TLE_MISSING" >> "$GITHUB_OUTPUT"
+          echo "sent_missing=$SENT_MISSING" >> "$GITHUB_OUTPUT"
+
+          if [ "$INPUT_FORCE_SEND" = "true" ]; then
+            echo "should_recover=true" >> "$GITHUB_OUTPUT"
+            echo "Recovery required: force_send=true"
+          elif [ "$TLE_MISSING" = "true" ] || [ "$SENT_MISSING" = "true" ]; then
+            echo "should_recover=true" >> "$GITHUB_OUTPUT"
+            echo "Recovery required: tle_missing=$TLE_MISSING sent_missing=$SENT_MISSING"
+          else
+            echo "should_recover=false" >> "$GITHUB_OUTPUT"
+            echo "No recovery required."
+          fi
+
+      - name: Stop if recovery is not required
+        if: steps.window.outputs.within_window == 'true' && steps.markers.outputs.should_recover != 'true'
+        run: |
+          echo "TLE marker and sent marker already exist. Nothing to recover."
+
+      - name: Force update TLE for report date
+        if: steps.window.outputs.within_window == 'true' && steps.markers.outputs.should_recover == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          REPORT_DATE="${{ steps.markers.outputs.report_date }}"
+          MARKER="${{ steps.markers.outputs.tle_marker }}"
+
+          node scripts/update-tle.mjs
+
+          mkdir -p reports/tle-updated
+
+          printf '{\n  "date": "%s",\n  "report_date": "%s",\n  "updated_at_utc": "%s",\n  "purpose": "00-02jst-recovery-same-day-report",\n  "workflow_run": "%s"\n}\n' \
+            "$REPORT_DATE" \
+            "$REPORT_DATE" \
+            "$(date -u +%FT%TZ)" \
+            "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            > "$MARKER"
+
+      - name: Send today's PASS report to Slack
+        if: steps.window.outputs.within_window == 'true' && steps.markers.outputs.should_recover == 'true'
+        env:
+          REPORT_DATE: ${{ steps.markers.outputs.report_date }}
+          INPUT_FORCE_SEND: ${{ github.event.inputs.force_send || 'false' }}
+          INPUT_SLACK_TARGET: ${{ github.event.inputs.slack_target || 'prod' }}
+
+          SLACK_BOT_TOKEN_TEST: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID_TEST: ${{ secrets.SLACK_CHANNEL_ID }}
+          SLACK_BOT_TOKEN_PROD: ${{ secrets.SLACK_BOT_TOKEN_1 }}
+          SLACK_CHANNEL_ID_PROD: ${{ secrets.SLACK_CHANNEL_ID_1 }}
+
+          PASS_OPERATION_MIN_ELEVATION_DEG: ${{ github.event.inputs.operation_min_elevation_deg || vars.PASS_OPERATION_MIN_ELEVATION_DEG || '10' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ "${INPUT_FORCE_SEND:-false}" = "true" ]; then
+            PASS_FORCE_SEND=true
+          else
+            PASS_FORCE_SEND=false
+          fi
+
+          SLACK_TARGET="${INPUT_SLACK_TARGET:-prod}"
+
+          if [ "$SLACK_TARGET" = "test" ]; then
+            export SLACK_BOT_TOKEN="$SLACK_BOT_TOKEN_TEST"
+            export SLACK_CHANNEL_ID="$SLACK_CHANNEL_ID_TEST"
+            export PASS_TEST_MODE=true
+          else
+            export SLACK_BOT_TOKEN="$SLACK_BOT_TOKEN_PROD"
+            export SLACK_CHANNEL_ID="$SLACK_CHANNEL_ID_PROD"
+            export PASS_TEST_MODE=false
+          fi
+
+          if [ -z "${SLACK_BOT_TOKEN:-}" ] || [ -z "${SLACK_CHANNEL_ID:-}" ]; then
+            echo "Slack token or channel ID is empty."
+            exit 1
+          fi
+
+          PASS_REPORT_DATE_YMD="$REPORT_DATE" \
+          PASS_FORCE_SEND="$PASS_FORCE_SEND" \
+          PASS_SEND_REASON="00-02 JST recovery same-day report" \
+          PASS_SKIP_LOS_CHECK=true \
+          node scripts/send-pass-report.mjs
+
+      - name: Commit recovered TLE/report markers if changed
+        if: steps.window.outputs.within_window == 'true' && steps.markers.outputs.should_recover == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if git diff --quiet -- public/tle reports; then
+            echo "No TLE/report marker changes."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add public/tle reports
+          git commit -m "Recover same-day PASS report"
+
+          git pull --rebase origin main
+          git push origin HEAD:main
