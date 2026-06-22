@@ -16,7 +16,7 @@
     "horizon_hours": 26,
     "step_sec": 20,
     "min_elevation_deg": 0.0,
-    "command_elevation_deg": 5.0,
+    "command_elevation_deg": 0.0,
     "radar_min_elevation_deg": 0.0,
     "radar_sample_step_sec": 1.0,
     "coarse_step_sec": 5,
