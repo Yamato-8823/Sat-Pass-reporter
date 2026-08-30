@@ -1,8 +1,5 @@
 name: PASS Slack Report 18 JST
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 on:
   workflow_dispatch:
     inputs:
@@ -10,14 +7,17 @@ on:
         description: "MEL threshold."
         required: false
         default: "10"
+
       date_ymd:
         description: "Target report date in Asia/Tokyo. Empty means JST tomorrow."
         required: false
         default: ""
+
       force_send:
         description: "true = send even if already sent marker exists."
         required: false
         default: "false"
+
       slack_target:
         description: "test or prod."
         required: false
@@ -36,7 +36,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -99,15 +99,18 @@ jobs:
       - name: Send PASS report to Slack
         env:
           REPORT_DATE: ${{ steps.report_date.outputs.report_date }}
+
           INPUT_FORCE_SEND: ${{ github.event.inputs.force_send || 'false' }}
           INPUT_SLACK_TARGET: ${{ github.event.inputs.slack_target || 'prod' }}
 
           SLACK_BOT_TOKEN_TEST: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_CHANNEL_ID_TEST: ${{ secrets.SLACK_CHANNEL_ID }}
+
           SLACK_BOT_TOKEN_PROD: ${{ secrets.SLACK_BOT_TOKEN_1 }}
           SLACK_CHANNEL_ID_PROD: ${{ secrets.SLACK_CHANNEL_ID_1 }}
 
           PASS_OPERATION_MIN_ELEVATION_DEG: ${{ github.event.inputs.operation_min_elevation_deg || vars.PASS_OPERATION_MIN_ELEVATION_DEG || '10' }}
+
         shell: bash
         run: |
           set -euo pipefail
@@ -146,7 +149,9 @@ jobs:
         run: |
           set -euo pipefail
 
-          if git diff --quiet -- public/tle reports; then
+          git add public/tle reports
+
+          if git diff --cached --quiet; then
             echo "No TLE/report marker changes."
             exit 0
           fi
@@ -154,7 +159,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add public/tle reports
           git commit -m "Update TLE and PASS report markers"
 
           git pull --rebase origin main
