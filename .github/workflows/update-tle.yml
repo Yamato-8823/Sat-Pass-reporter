@@ -1,8 +1,5 @@
 name: Manual Update TLE
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 on:
   workflow_dispatch:
 
@@ -30,15 +27,21 @@ jobs:
         run: node scripts/update-tle.mjs
 
       - name: Commit TLE update
+        shell: bash
         run: |
-          if git diff --quiet -- public/tle; then
+          set -euo pipefail
+
+          git add public/tle
+
+          if git diff --cached --quiet; then
             echo "No TLE changes."
             exit 0
           fi
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/tle
+
           git commit -m "Update TLE"
+
           git pull --rebase origin main
           git push origin HEAD:main
