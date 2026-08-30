@@ -5,10 +5,10 @@
     "catnr": "68799",
     "url": "https://celestrak.org/NORAD/elements/gp.php?CATNR=68799&FORMAT=TLE",
     "output": "public/tle/mono-nikko-h.tle",
-    "changed": true,
+    "changed": false,
     "epoch": "26242.14750015",
     "sha256": "867807f949f733ad9294a0fdc52f9e61f432fd1d9c064ff7ab0bc97d80b9e869",
-    "updated_at_utc": "2026-08-30T14:36:00.790Z",
+    "updated_at_utc": "2026-08-30T15:45:33.767Z",
     "line1": "1 68799U 26088H   26242.14750015  .00004155  00000+0  26375-3 0  9992",
     "line2": "2 68799  97.5163  29.9775 0018795 182.9235 177.1887 15.09278724 19454"
   }
